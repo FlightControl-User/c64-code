@@ -61,7 +61,7 @@ void main() {
     draw_clear_screen();
     draw_status_xy(0, 0, "moving screen...");
 
-    save_machine_state();
+load    machine_save_state();
     draw_status_xy(0, 1, "save machine state done...");
 
     copy_rom_charset_to_ram();

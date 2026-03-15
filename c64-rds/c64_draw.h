@@ -5,8 +5,6 @@ extern char* conio_screen_base;
 extern char* const EDITOR_SCREEN;
 extern const char MAP_WIDTH;
 
-void save_machine_state();
-void restore_machine_state();
 void copy_rom_charset_to_ram();
 void setup_editor_vicii();
 

@@ -11,8 +11,7 @@ VERBOSE ?= 0
 # - first source contains main()
 # - least-dependent sources should be placed later in the list
 RESOURCE_C_SOURCES ?= graphics/c64_road.c
-APP_C_SOURCES ?= c64_rds.c c64_draw.c c64_disk.c
-C_SOURCES := $(RESOURCE_C_SOURCES) $(APP_C_SOURCES)
+APP_C_SOURCES ?= c64_rds.c c64_machine.c c64_draw.c c64_disk.c
 MAIN ?= $(firstword $(APP_C_SOURCES))
 
 WORKSPACE_DIR := $(abspath ..)
@@ -23,11 +22,6 @@ TARGET_DIR_ABS := $(abspath $(TARGET_DIR_REL))
 
 PS := powershell -NoProfile -ExecutionPolicy Bypass -Command
 
-dep_key = $(subst .,_,$(subst /,_,$(1)))
-
-# Map generated .p interfaces to the source file that produces them.
-P_PRODUCER_c64_draw_p := c64_draw.c
-P_PRODUCER_c64_disk_p := c64_disk.c
 
 KICKC_DEV := $(subst \,/,$(KICKCDEV))
 KICKC_JAR := $(KICKC_DEV)/target/kickc-release.jar
@@ -39,19 +33,7 @@ KICKC_STD_LIB := $(KICKC_DEV)/src/main/kc/lib
 KICKC_FRAGMENT_HOME := $(KICKC_DEV)/src/main/fragment
 KICKC_PLATFORM_HOME := $(KICKC_DEV)/src/main/kc/target
 
-obj_of = $(TARGET_DIR_REL)/$(basename $(notdir $(1))).o
-p_of = $(TARGET_DIR_REL)/$(basename $(notdir $(1))).p
-
-OBJ_FILES := $(foreach s,$(C_SOURCES),$(call obj_of,$(s)))
-P_FILES := $(foreach s,$(C_SOURCES),$(call p_of,$(s)))
-RESOURCE_MAIN := $(lastword $(RESOURCE_C_SOURCES))
-RESOURCE_OBJ := $(call obj_of,$(RESOURCE_MAIN))
-MAIN_OBJ := $(call obj_of,$(MAIN))
-LIB_C_SOURCES := $(filter-out $(MAIN),$(APP_C_SOURCES))
-LIB_OBJ_FILES := $(foreach s,$(LIB_C_SOURCES),$(call obj_of,$(s)))
-
 RESOURCE_STAMP := $(TARGET_DIR_REL)/resource.batch.stamp
-LIBS_STAMP := $(TARGET_DIR_REL)/libs.batch.stamp
 APP_STAMP := $(TARGET_DIR_REL)/app.batch.stamp
 
 ALL_LOCAL_HEADERS := $(wildcard *.h graphics/*.h)
@@ -61,26 +43,10 @@ $(strip $(shell $(PS) "$$ErrorActionPreference='Stop'; $$root = ([System.IO.Path
 endef
 
 RESOURCE_INCLUDE_H_FILES := $(call scan_includes_ext,$(RESOURCE_C_SOURCES),h)
-LIBS_INCLUDE_H_FILES := $(call scan_includes_ext,$(LIB_C_SOURCES),h)
 APP_INCLUDE_H_FILES := $(call scan_includes_ext,$(APP_C_SOURCES),h)
 
-RESOURCE_INCLUDE_P_FILES := $(call scan_includes_ext,$(RESOURCE_C_SOURCES),p)
-LIBS_INCLUDE_P_FILES := $(call scan_includes_ext,$(LIB_C_SOURCES),p)
-APP_INCLUDE_P_FILES := $(call scan_includes_ext,$(APP_C_SOURCES),p)
-
 RESOURCE_INCLUDE_DEPS := $(filter $(ALL_LOCAL_HEADERS),$(RESOURCE_INCLUDE_H_FILES))
-LIBS_INCLUDE_DEPS := $(filter $(ALL_LOCAL_HEADERS),$(LIBS_INCLUDE_H_FILES))
 APP_INCLUDE_DEPS := $(filter $(ALL_LOCAL_HEADERS),$(APP_INCLUDE_H_FILES))
-
-# Map discovered .p includes to producer batch dependencies.
-P_TO_BATCH_c64_draw_p := $(LIBS_STAMP)
-P_TO_BATCH_c64_disk_p := $(LIBS_STAMP)
-p_key = $(subst .,_,$(subst /,_,$(1)))
-p_to_batch = $(P_TO_BATCH_$(call p_key,$(1)))
-
-RESOURCE_BATCH_DEPS := $(sort $(filter-out $(RESOURCE_STAMP),$(foreach p,$(RESOURCE_INCLUDE_P_FILES),$(call p_to_batch,$(p)))))
-LIBS_BATCH_DEPS := $(sort $(filter-out $(LIBS_STAMP),$(foreach p,$(LIBS_INCLUDE_P_FILES),$(call p_to_batch,$(p)))))
-APP_BATCH_DEPS := $(sort $(filter-out $(APP_STAMP),$(foreach p,$(APP_INCLUDE_P_FILES),$(call p_to_batch,$(p)))))
 
 COMMON_KICKC_ARGS := \
 	-Xms64M \
@@ -117,25 +83,18 @@ define run_compile_batch
 $(PS) "$$ErrorActionPreference='Stop'; if(!(Test-Path '$(TARGET_DIR_ABS)')) { [void](New-Item -ItemType Directory -Path '$(TARGET_DIR_ABS)' -Force) }; $$command = 'java $(COMMON_KICKC_ARGS) $(MODE_KICKC_ARGS) $(foreach s,$(1),"$(WORKSPACE_DIR)/$(DIR_ARG)/$(s)" )'; if('$(VERBOSE)' -eq '1') { Write-Host $$command }; Invoke-Expression $$command; if($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; Set-Content -Path '$@' -Value ''"
 endef
 
-.PHONY: all app resources libs all-sources file normal optimized clean info list
+.PHONY: all app resources file normal optimized clean info list
 
-all: resources app
+all: app
 
 resources: $(RESOURCE_STAMP)
 
 app: $(APP_STAMP)
 
-libs: $(LIBS_STAMP)
-
-all-sources: $(RESOURCE_STAMP) $(LIBS_STAMP) $(APP_STAMP)
-
-$(RESOURCE_STAMP): $(RESOURCE_C_SOURCES) $(filter %.h,$(RESOURCE_INCLUDE_DEPS)) $(RESOURCE_BATCH_DEPS)
+$(RESOURCE_STAMP): $(RESOURCE_C_SOURCES) $(filter %.h,$(RESOURCE_INCLUDE_DEPS))
 	$(call run_compile_batch,$(RESOURCE_C_SOURCES))
 
-$(LIBS_STAMP): $(LIB_C_SOURCES) $(filter %.h,$(LIBS_INCLUDE_DEPS)) $(LIBS_BATCH_DEPS)
-	$(call run_compile_batch,$(LIB_C_SOURCES))
-
-$(APP_STAMP): $(APP_C_SOURCES) $(filter %.h,$(APP_INCLUDE_DEPS)) $(APP_BATCH_DEPS)
+$(APP_STAMP): $(APP_C_SOURCES) $(filter %.h,$(APP_INCLUDE_DEPS)) $(RESOURCE_STAMP)
 	$(call run_compile_batch,$(APP_C_SOURCES))
 
 file:
@@ -155,13 +114,8 @@ clean:
 list:
 	@echo RESOURCE_C_SOURCES=$(RESOURCE_C_SOURCES)
 	@echo APP_C_SOURCES=$(APP_C_SOURCES)
-	@echo ORDERED_SOURCES=$(C_SOURCES)
 	@echo RESOURCE_INCLUDE_DEPS=$(RESOURCE_INCLUDE_DEPS)
-	@echo LIBS_INCLUDE_DEPS=$(LIBS_INCLUDE_DEPS)
 	@echo APP_INCLUDE_DEPS=$(APP_INCLUDE_DEPS)
-	@echo RESOURCE_INCLUDE_P_FILES=$(RESOURCE_INCLUDE_P_FILES)
-	@echo LIBS_INCLUDE_P_FILES=$(LIBS_INCLUDE_P_FILES)
-	@echo APP_INCLUDE_P_FILES=$(APP_INCLUDE_P_FILES)
 
 info:
 	@echo MODE=$(MODE)
@@ -170,20 +124,13 @@ info:
 	@echo MAIN=$(MAIN)
 	@echo RESOURCE_C_SOURCES=$(RESOURCE_C_SOURCES)
 	@echo APP_C_SOURCES=$(APP_C_SOURCES)
-	@echo ORDERED_SOURCES=$(C_SOURCES)
-	@echo OBJECTS=$(OBJ_FILES)
-	@echo P_FILES=$(P_FILES)
 	@echo WORKSPACE_DIR=$(WORKSPACE_DIR)
 	@echo USER_DEV=$(USER_DEV)
 	@echo TARGET_DIR_ABS=$(TARGET_DIR_ABS)
 	@echo KICKC_DEV=$(KICKC_DEV)
 	@echo KICKC_JAR=$(KICKC_JAR)
 	@echo RESOURCE_INCLUDE_DEPS=$(RESOURCE_INCLUDE_DEPS)
-	@echo LIBS_INCLUDE_DEPS=$(LIBS_INCLUDE_DEPS)
 	@echo APP_INCLUDE_DEPS=$(APP_INCLUDE_DEPS)
-	@echo RESOURCE_INCLUDE_P_FILES=$(RESOURCE_INCLUDE_P_FILES)
-	@echo LIBS_INCLUDE_P_FILES=$(LIBS_INCLUDE_P_FILES)
-	@echo APP_INCLUDE_P_FILES=$(APP_INCLUDE_P_FILES)
 	@echo RESOURCE_BATCH_DEPS=$(RESOURCE_BATCH_DEPS)
 	@echo LIBS_BATCH_DEPS=$(LIBS_BATCH_DEPS)
 	@echo APP_BATCH_DEPS=$(APP_BATCH_DEPS)

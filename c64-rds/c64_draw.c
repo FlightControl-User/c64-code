@@ -1,10 +1,11 @@
 
 #pragma lib_configure
 
-#pragma lib_export(__varcall, save_machine_state, restore_machine_state, copy_rom_charset_to_ram, setup_editor_vicii, draw_clear_screen, draw_status_xy, draw_use_editor_screen, clear_editor_screen_tile0, draw_road_test_case)
+#pragma lib_export(__varcall, copy_rom_charset_to_ram, setup_editor_vicii, draw_clear_screen, draw_status_xy, draw_use_editor_screen, clear_editor_screen_tile0, draw_road_test_case)
 
 // #include "graphics/c64_resources.h"
 #include "c64_draw.h"
+#include <6502.h>
 #include <c64.h>
 #include <string.h>
 
@@ -14,13 +15,6 @@ char* conio_screen_base = (char*)DEFAULT_SCREEN;
 
 char* const CHARSET_SHADOW = (char*)0xc800;
 char* const EDITOR_SCREEN = (char*)0xc000;
-
-char zp_backup[254];
-char saved_procport;
-char saved_cia2_porta;
-char saved_d011;
-char saved_d016;
-char saved_d018;
 
 const unsigned int CHARSET_SIZE = 2048;
 const unsigned int ROM_CHARSET_MIXED_OFFSET = 0x800;
@@ -78,6 +72,8 @@ const char decline_right_two_segment_1x2_table[] = {
     2, 3
 };
 
+#pragma calling(__varcall)
+#pragma calling(__varcall)
 void draw_clear_screen() {
     memset(conio_screen_base, 0x20, 40 * 25);
 }
@@ -93,51 +89,6 @@ void draw_use_editor_screen() {
     conio_screen_base = EDITOR_SCREEN;
 }
 
-void save_machine_state() {
-    saved_procport = *PROCPORT;
-    saved_cia2_porta = CIA2->PORT_A;
-    saved_d011 = *D011;
-    saved_d016 = *D016;
-    saved_d018 = *D018;
-#ifndef __INTELLISENSE__
-    kickasm(uses zp_backup) {{
-        ldx #0
-      !:
-        lda $0002,x
-        sta zp_backup,x
-        inx
-        cpx #254
-        bne !-
-    }}
-#endif
-}
-
-void irq_enable() {
-#ifndef __INTELLISENSE__
-    asm { cli }
-#endif
-}
-
-void restore_machine_state() {
-    *PROCPORT = saved_procport;
-    CIA2->PORT_A = saved_cia2_porta;
-    *D011 = saved_d011;
-    *D016 = saved_d016;
-    *D018 = saved_d018;
-#ifndef __INTELLISENSE__
-    kickasm(uses zp_backup) {{
-        ldx #0
-      !:
-        lda zp_backup,x
-        sta $0002,x
-        inx
-        cpx #254
-        bne !-
-    }}
-#endif
-    irq_enable();
-}
-
 void set_ram_with_io() {
     *PROCPORT = (*PROCPORT & (char)(0xff ^ PROCPORT_DDR_MEMORY_MASK)) | PROCPORT_RAM_IO;
 }
@@ -150,23 +101,18 @@ void wait_keypress() {
     while(~*CIA1_PORT_B) {}
 }
 
-void irq_disable() {
-#ifndef __INTELLISENSE__
-    asm { sei }
-#endif
-}
-
+#pragma calling(__varcall)
 void copy_rom_charset_to_ram() {
-    irq_disable();
+    SEI();
     char old_port = *PROCPORT;
     *PROCPORT = (*PROCPORT & (char)(0xff ^ PROCPORT_DDR_MEMORY_MASK)) | PROCPORT_RAM_CHARROM;
     memcpy(CHARSET_SHADOW, CHARGEN + ROM_CHARSET_MIXED_OFFSET, CHARSET_SIZE);
     *PROCPORT = old_port;
-    irq_enable();
+    CLI();
 }
 
 void setup_editor_vicii() {
-    irq_disable();
+    SEI();
     set_ram_with_io();
     vicSelectGfxBank(EDITOR_SCREEN);
     *D011 = (*D011 & VICII_RST8) | VICII_DEN | VICII_RSEL | VICII_ECM | 3;
