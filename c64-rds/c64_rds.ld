@@ -1,5 +1,5 @@
-.disk [filename="c64-rds.d64", name="C64 RDS", id="64"] {
-    [name="SET", type="prg", segments="Program"],
+.disk [filename="c64_rds.d64", name="C64 RDS", id="64"] {
+    [name="RDS", type="prg", segments="Program"],
     [name="ROAD.BIN", type="prg", noStartAddr, segments="road"],
 }
 .segmentdef Program [segments="Basic, Code, Data"]
@@ -9,7 +9,7 @@
 .segmentdef road []
 
 .segment Basic
-:BasicUpstart2(%E)
+:BasicUpstart2(main)
 .segment Code
 .segment Data
 

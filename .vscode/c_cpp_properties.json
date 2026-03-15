@@ -1,0 +1,51 @@
+{
+    "configurations": [
+        {
+            "name": "kickc-c64",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/.target/c64-rds/**",
+                "C:/Users/svenv/OneDrive/Documents/GitHub/kickc/src/main/kc/include",
+                "C:/Users/svenv/OneDrive/Documents/GitHub/x16-code/x16-inc/**",
+                "C:/Users/svenv/OneDrive/Documents/GitHub/x16-code/.target/x16-asm/**",
+                "${workspaceFolder}/.target/c64-rds",
+                "${workspaceFolder}/.target/c64-rds"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "${workspaceFolder}/.target/c64-rds",
+                    "C:/Users/svenv/OneDrive/Documents/GitHub/kickc/src/main/kc/include",
+                    "C:/Users/svenv/OneDrive/Documents/GitHub/x16-code/x16-inc",
+                    "C:/Users/svenv/OneDrive/Documents/GitHub/x16-code/.target/x16-asm"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "defines": [
+                "__KICKC__",
+                "__export=",
+                "__align(x)=",
+                "__address(x)=",
+                "__interrupt=",
+                "__interrupt(x)=",
+                "__zp=",
+                "__mem=",
+                "__ssa=",
+                "__ma=",
+                "__stackcall=",
+                "__varcall=",
+                "__phicall=",
+                "__lib_export=",
+                "__lib_import(x)=",
+                "kickasm=",
+                "__fastcall=",
+                "__cdecl="
+            ],
+            "compilerPath": "",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
