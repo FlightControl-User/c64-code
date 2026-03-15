@@ -13,6 +13,7 @@ void draw_status_xy(char x, char y, char* text);
 void draw_use_editor_screen();
 
 void clear_editor_screen_tile0();
-void draw_road_test_case(char map_left, char map_top, const char* heights7, char wait_after);
+void clear_road_matrix(char map_left, char map_top);
+char draw_road_vertical(char map_left, char map_top, const char* heights7);
 
 #endif

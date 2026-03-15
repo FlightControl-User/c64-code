@@ -1,7 +1,7 @@
 
 #pragma lib_configure
 
-#pragma lib_export(__varcall, copy_rom_charset_to_ram, setup_editor_vicii, draw_clear_screen, draw_status_xy, draw_use_editor_screen, clear_editor_screen_tile0, draw_road_test_case)
+#pragma lib_export(__varcall, copy_rom_charset_to_ram, setup_editor_vicii, draw_clear_screen, draw_status_xy, draw_use_editor_screen, clear_editor_screen_tile0, clear_road_matrix, draw_road_vertical)
 
 // #include "graphics/c64_resources.h"
 #include "c64_draw.h"
@@ -10,8 +10,6 @@
 #include <string.h>
 
 char* conio_screen_base = (char*)DEFAULT_SCREEN;
-
-#include <c64-keyboard.h>
 
 char* const CHARSET_SHADOW = (char*)0xc800;
 char* const EDITOR_SCREEN = (char*)0xc000;
@@ -72,8 +70,6 @@ const char decline_right_two_segment_1x2_table[] = {
     2, 3
 };
 
-#pragma calling(__varcall)
-#pragma calling(__varcall)
 void draw_clear_screen() {
     memset(conio_screen_base, 0x20, 40 * 25);
 }
@@ -91,14 +87,6 @@ void draw_use_editor_screen() {
 
 void set_ram_with_io() {
     *PROCPORT = (*PROCPORT & (char)(0xff ^ PROCPORT_DDR_MEMORY_MASK)) | PROCPORT_RAM_IO;
-}
-
-void wait_keypress() {
-    char* const CIA1_PORT_A = (char*)0xdc00;
-    char* const CIA1_PORT_B = (char*)0xdc01;
-    *CIA1_PORT_A = 0;
-    while(!(~*CIA1_PORT_B)) {}
-    while(~*CIA1_PORT_B) {}
 }
 
 
@@ -288,12 +276,4 @@ char draw_road_vertical(char map_left, char map_top, const char* heights7) {
     }
 
     return 1;
-}
-
-void draw_road_test_case(char map_left, char map_top, const char* heights7, char wait_after) {
-    clear_road_matrix(map_left, map_top);
-    draw_road_vertical(map_left, map_top, heights7);
-    if(wait_after != 0) {
-        wait_keypress();
-    }
 }

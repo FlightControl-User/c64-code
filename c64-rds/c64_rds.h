@@ -2,6 +2,7 @@
 #define C64_RDS_H
 
 #include "c64_machine.p"
+#include "c64_editor.p"
 #include "c64_draw.p"
 #include "c64_disk.p"
 

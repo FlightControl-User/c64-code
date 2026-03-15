@@ -11,7 +11,7 @@ VERBOSE ?= 0
 # - first source contains main()
 # - least-dependent sources should be placed later in the list
 RESOURCE_C_SOURCES ?= graphics/c64_road.c
-APP_C_SOURCES ?= c64_rds.c c64_machine.c c64_draw.c c64_disk.c
+APP_C_SOURCES ?= c64_rds.c c64_editor.c c64_machine.c c64_draw.c c64_disk.c
 MAIN ?= $(firstword $(APP_C_SOURCES))
 
 WORKSPACE_DIR := $(abspath ..)
@@ -131,6 +131,3 @@ info:
 	@echo KICKC_JAR=$(KICKC_JAR)
 	@echo RESOURCE_INCLUDE_DEPS=$(RESOURCE_INCLUDE_DEPS)
 	@echo APP_INCLUDE_DEPS=$(APP_INCLUDE_DEPS)
-	@echo RESOURCE_BATCH_DEPS=$(RESOURCE_BATCH_DEPS)
-	@echo LIBS_BATCH_DEPS=$(LIBS_BATCH_DEPS)
-	@echo APP_BATCH_DEPS=$(APP_BATCH_DEPS)
