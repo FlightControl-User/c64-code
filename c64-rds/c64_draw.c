@@ -101,7 +101,7 @@ void wait_keypress() {
     while(~*CIA1_PORT_B) {}
 }
 
-#pragma calling(__varcall)
+
 void copy_rom_charset_to_ram() {
     SEI();
     char old_port = *PROCPORT;

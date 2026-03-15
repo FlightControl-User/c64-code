@@ -2,66 +2,19 @@
 
 #include "c64_rds.h"
 #include <c64-keyboard.h>
-#include <string.h>
-
-static void kernal_setnam(char* filename) {
-    char filename_len = (char)strlen(filename);
-#ifndef __INTELLISENSE__
-    asm {
-        lda filename_len
-        ldx filename
-        ldy filename+1
-        jsr $ffbd
-    }
-#else
-    (void)filename_len;
-#endif
-}
-
-static void kernal_setlfs(char lfn, char device, char sa) {
-#ifndef __INTELLISENSE__
-    asm {
-        lda lfn
-        ldx device
-        ldy sa
-        jsr $ffba
-    }
-#else
-    (void)lfn;
-    (void)device;
-    (void)sa;
-#endif
-}
-
-static char kernal_load(char* address, char verify) {
-    char status = 0;
-#ifndef __INTELLISENSE__
-    asm {
-        ldx address
-        ldy address+1
-        lda verify
-        jsr $ffd5
-        bcs error
-        lda #$ff
-      error:
-        sta status
-    }
-#endif
-    return status;
-}
 
 char load_road_bin() {
     char* const ROAD_DATA = (char*)0xc800;
-    kernal_setnam("ROAD.BIN");
-    kernal_setlfs(1, 8, 0);
-    return kernal_load(ROAD_DATA, 0);
+    cbm_setnam("ROAD.BIN");
+    cbm_setlfs(1, 8, 0);
+    return cbm_load(ROAD_DATA, 0);
 }
 
 void main() {
     draw_clear_screen();
     draw_status_xy(0, 0, "moving screen...");
 
-load    machine_save_state();
+    machine_save_state();
     draw_status_xy(0, 1, "save machine state done...");
 
     copy_rom_charset_to_ram();
